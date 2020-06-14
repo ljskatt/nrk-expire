@@ -17,7 +17,7 @@ Den lager rapporter utifra programmer/serier som:
 Ja, det har vi:
 
 - [Kalender rapport](https://ljskatt.no/nrk-expire.ics)<br>Kan linkes til kalender ved å legge til URL basert kalender: `https://ljskatt.no/nrk-expire.ics`
-- [Excel rapport](https://ljskatt.no/nrk-expire.xlxs)
+- [Excel rapport](https://ljskatt.no/nrk-expire.xlsx)
 
 ## Start
 Last ned filen og kjør kommandoen for å genere rapport/rapporter.
