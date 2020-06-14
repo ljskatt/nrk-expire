@@ -1,15 +1,39 @@
+param (
+    [Parameter()]
+    [switch]
+    $CalendarReport,
+
+    [Parameter()]
+    [switch]
+    $ExcelReport
+)
+
 $time_now = Get-Date
 $warn_expire = (Get-Date).AddMonths(12)
 $root_location = Get-Location
 $cache_dir = "$root_location\cache-nrk"
 $excel_file = "$root_location\near-expire-nrk.xlsx"
+$calendar_file = "$root_location\near-expire-nrk.ics"
 $excel_values = @()
 $ProgressPreference = 'SilentlyContinue'
 $requests_cached = 0
 $requests_uncached = 0
+$processed_items = 0
+
+if ((!($CalendarReport)) -and (!($ExcelReport))) {
+    Write-Output "CalendarReport and/or ExcelReport is not specified"
+    exit
+}
+
+if ($ExcelReport) {
+    if (!(Get-Module -Name ImportExcel)) {
+        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script "; Write-Host -ForegroundColor "DarkGray" -Object "|"
+        exit
+    }
+}
 
 if (!(Test-Path "$cache_dir")){
-    New-Item -ItemType Directory "$cache_dir" | Out-Null
+    New-Item -ItemType "Directory" -Path "$cache_dir" | Out-Null
 }
 if (!(Test-Path -Type "Container" -Path "$cache_dir")){
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
@@ -17,7 +41,7 @@ if (!(Test-Path -Type "Container" -Path "$cache_dir")){
 }
 
 if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
-    New-Item -ItemType Directory "$cache_dir/series" | Out-Null
+    New-Item -ItemType "Directory" -Path "$cache_dir/series" | Out-Null
 }
 if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create series cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
@@ -25,7 +49,7 @@ if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
 }
 
 if (!(Test-Path "$cache_dir/episode")){
-    New-Item -ItemType Directory "$cache_dir/episode" | Out-Null
+    New-Item -ItemType "Directory" -Path "$cache_dir/episode" | Out-Null
 }
 if (!(Test-Path "$cache_dir/episode")){
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
@@ -60,7 +84,7 @@ function Format-Name {
 $categories = ((invoke-webrequest "https://psapi.nrk.no/tv/pages").Content | ConvertFrom-Json).pageListItems._links.self.href
 $requests_uncached += 1
 $ProgressPreference = 'Continue'
-Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached"
+Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
 $ProgressPreference = 'SilentlyContinue'
 
 $category_total = $categories.Count
@@ -87,7 +111,7 @@ foreach ($category in $categories){
         foreach ($series in $subcategory.plugs) {
             $ProgressPreference = 'Continue'
             $progseries_current += 1
-            Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached"
+            Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
             Write-Progress -Id 3 -Activity "Program / Series" -Status "$progseries_current/$progseries_total" -PercentComplete (100 / $progseries_total * $progseries_current)
             $ProgressPreference = 'SilentlyContinue'
             if ($series.targetType -eq "series") {
@@ -110,6 +134,7 @@ foreach ($category in $categories){
                     }
                 }
 
+                $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
                 foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
                     if ($episode.usageRights.to.date){
                         $expire_date_value = Get-Date $episode.usageRights.to.date
@@ -136,6 +161,7 @@ foreach ($category in $categories){
                 }
             }
             elseif ($series.targetType -eq "episode") {
+                $processed_items += 1
                 $series_name = $series.displayContractContent.contentTitle
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.episode._links.self.href
@@ -179,6 +205,7 @@ foreach ($category in $categories){
                 }
             }
             elseif ($series.targetType -eq "standaloneProgram") {
+                $processed_items += 1
                 $series_name = $series.displayContractContent.contentTitle
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.standaloneProgram._links.self.href
@@ -224,4 +251,69 @@ foreach ($category in $categories){
         }
     }
 }
-$excel_values | Export-Excel -Path "$excel_file" -WorksheetName "Near Expiry"
+
+if ($CalendarReport) {
+    $sb = [System.Text.StringBuilder]::new()
+    [void]$sb.AppendLine("BEGIN:VCALENDAR")
+    [void]$sb.AppendLine("VERSION:2.0")
+    [void]$sb.AppendLine("METHOD:PUBLISH")
+
+    $longDateFormat = "yyyyMMddTHHmmssZ"
+    $calendar_values = @()
+
+    $ProgressPreference = 'Continue'
+    $excel_values_total = $excel_values.Count
+    $excel_values_current = 0
+    $excel_values_dropped = 0
+    foreach ($row in $excel_values.GetEnumerator()) {
+        $excel_values_current += 1
+        $expire_date = $row.Date -replace "-" 
+        $check_calendar = $null
+        $check_calendar = $calendar_values | Where-Object {($_.Name -eq $row.Name) -and ($_.Date -eq "$expire_date")}
+        if (!($check_calendar.Name)){
+            $hash = [ordered]@{
+                'Name' = $row.Name
+                'Date' = $expire_date
+            }
+            $calendar_values += New-Object -TypeName PSObject -Property $hash
+        }
+        else {
+            $excel_values_dropped += 1
+        }
+        Write-Progress -Id 4 -Activity "Converting to Calendar format" -Status "Processed: $excel_values_current/$excel_values_total, Dropped: $excel_values_dropped" -PercentComplete (100 / $excel_values_total * $excel_values_current)
+    }
+    $ProgressPreference = 'SilentlyContinue'
+    foreach ($row in $calendar_values.GetEnumerator()) {
+        $eventSubject = $row.Name
+
+        if ($row.Episode){
+            $row_episode = $row.Episode
+            $row_name = $row.Name
+            $eventDesc = "$row_name $row_episode"
+        }
+        else {
+            $eventDesc = $row.Name
+        }
+
+        [void]$sb.AppendLine("BEGIN:VEVENT")
+        [void]$sb.AppendLine("UID:" + [guid]::NewGuid())
+        [void]$sb.AppendLine("CREATED:" + [datetime]::Now.ToUniversalTime().ToString($longDateFormat))
+        [void]$sb.AppendLine("DTSTAMP:" + [datetime]::Now.ToUniversalTime().ToString($longDateFormat))
+        [void]$sb.AppendLine("LAST-MODIFIED:" + [datetime]::Now.ToUniversalTime().ToString($longDateFormat))
+        [void]$sb.AppendLine("SEQUENCE:0")
+        [void]$sb.AppendLine("DTSTART:" + $row.Date)
+        [void]$sb.AppendLine("DESCRIPTION:" + $eventDesc)
+        [void]$sb.AppendLine("SUMMARY:" + $eventSubject)
+        [void]$sb.AppendLine("LOCATION:")
+        [void]$sb.AppendLine("TRANSP:TRANSPARENT")
+        [void]$sb.AppendLine("END:VEVENT")
+    }
+
+    [void]$sb.AppendLine("END:VCALENDAR")
+
+    $sb.ToString() | Out-File -Encoding "UTF8" -FilePath "$calendar_file"
+}
+
+if ($ExcelReport) {
+    $excel_values | Export-Excel -Path "$excel_file" -WorksheetName "Near Expiry"
+}
