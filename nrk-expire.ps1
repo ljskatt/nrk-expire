@@ -21,18 +21,18 @@ $requests_uncached = 0
 $processed_items = 0
 
 if ((!($CalendarReport)) -and (!($ExcelReport))) {
-    Write-Output "CalendarReport and/or ExcelReport is not specified"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " -CalendarReport and/or -ExcelReport is not specified " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
 if ($ExcelReport) {
     if (!(Get-Module -Name ImportExcel)) {
-        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script "; Write-Host -ForegroundColor "DarkGray" -Object "|"
+        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
         exit
     }
 }
 
-if (!(Test-Path "$cache_dir")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir")){
     New-Item -ItemType "Directory" -Path "$cache_dir" | Out-Null
 }
 if (!(Test-Path -Type "Container" -Path "$cache_dir")){
@@ -48,18 +48,18 @@ if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
     exit
 }
 
-if (!(Test-Path "$cache_dir/episode")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")){
     New-Item -ItemType "Directory" -Path "$cache_dir/episode" | Out-Null
 }
-if (!(Test-Path "$cache_dir/episode")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")){
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path "$cache_dir/standaloneprogram")){
-    New-Item -ItemType Directory "$cache_dir/standaloneprogram" | Out-Null
+if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")){
+    New-Item -ItemType "Directory" -Path "$cache_dir/standaloneprogram" | Out-Null
 }
-if (!(Test-Path "$cache_dir/standaloneprogram")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")){
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create standaloneprogram cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
@@ -95,7 +95,7 @@ foreach ($category in $categories){
     $ProgressPreference = 'Continue'
     Write-Progress -Id 1 -Activity "Category" -Status "$category_current/$category_total" -PercentComplete (100 / $category_total * $category_current)
     $ProgressPreference = 'SilentlyContinue'
-    $req = (Invoke-WebRequest "https://psapi.nrk.no$category").Content | ConvertFrom-Json
+    $req = (Invoke-WebRequest -Uri "https://psapi.nrk.no$category").Content | ConvertFrom-Json
     $requests_uncached += 1
 
     $subcat_total = $req.sections.included.Count
@@ -119,25 +119,25 @@ foreach ($category in $categories){
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.series._links.self.href
 
-                if (Test-Path "$cache_dir/series/$series_name_filtered.json"){
-                    $episodes_raw = Get-Content "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
+                if (Test-Path -PathType "Leaf" -Path "$cache_dir/series/$series_name_filtered.json"){
+                    $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
                     $requests_cached += 1
                 }
                 else {
-                    Invoke-WebRequest "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
+                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
                     $requests_uncached += 1
                     if (Test-Path -Type "Leaf" -Path "$cache_dir/series/$series_name_filtered.json") {
-                        $episodes_raw = Get-Content "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
+                        $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object "Error downloading $series_name_filtered"
+                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                     }
                 }
 
                 $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
                 foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
                     if ($episode.usageRights.to.date){
-                        $expire_date_value = Get-Date $episode.usageRights.to.date
+                        $expire_date_value = Get-Date -Date $episode.usageRights.to.date
                         $episode_id = $episode.prfId
                         if ($time_now -gt $expire_date_value) {
                             # Expired
@@ -151,10 +151,10 @@ foreach ($category in $categories){
                                     'Name' = $series_name
                                     'URL' = "https://tv.nrk.no/episode$episode_id"
                                     'Type' = $series.targetType
-                                    'Date' = (Get-Date -Format "yyyy-MM-dd" $episode.usageRights.to.date)
+                                    'Date' = (Get-Date -Format "yyyy-MM-dd" -Date $episode.usageRights.to.date)
                                     'Episode' = $episode_id
                                 }
-                                $excel_values += New-Object -TypeName PSObject -Property $hash
+                                $excel_values += New-Object -TypeName "PSObject" -Property $hash
                             }
                         }
                     }
@@ -166,24 +166,24 @@ foreach ($category in $categories){
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.episode._links.self.href
 
-                if (Test-Path "$cache_dir/episode/$series_name_filtered.json"){
-                    $episodes_raw = Get-Content "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
+                if (Test-Path -PathType "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json"){
+                    $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
                     $requests_cached += 1
                 }
                 else {
-                    Invoke-WebRequest "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/episode/$series_name_filtered.json"
+                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/episode/$series_name_filtered.json"
                     $requests_uncached += 1
                     if (Test-Path -Type "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json") {
-                        $episodes_raw = Get-Content "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
+                        $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object "Error downloading $series_name_filtered"
+                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                     }
                 }
 
                 $date = $episodes_raw.moreInformation.usageRights.to
-                $expire_date_value = get-date $date.date
-                $expire_date_display = Get-Date -Format "yyyy-MM-dd" $date.date
+                $expire_date_value = Get-Date -Date $date.date
+                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date $date.date
 
                 if ($time_now -gt $expire_date_value) {
                     # Expired
@@ -200,7 +200,7 @@ foreach ($category in $categories){
                             'Date' = $expire_date_display
                             'Episode' = ''
                         }
-                        $excel_values += New-Object -TypeName PSObject -Property $hash
+                        $excel_values += New-Object -TypeName "PSObject" -Property $hash
                     }
                 }
             }
@@ -210,24 +210,24 @@ foreach ($category in $categories){
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.standaloneProgram._links.self.href
 
-                if (Test-Path "$cache_dir/standaloneprogram/$series_name_filtered.json"){
-                    $episodes_raw = Get-Content "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
+                if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json"){
+                    $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
                     $requests_cached += 1
                 }
                 else {
-                    Invoke-WebRequest "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/standaloneprogram/$series_name_filtered.json"
+                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/standaloneprogram/$series_name_filtered.json"
                     $requests_uncached += 1
                     if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json") {
-                        $episodes_raw = Get-Content "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
+                        $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object "Error downloading $series_name_filtered"
+                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                     }
                 }
 
                 $date = $episodes_raw.moreInformation.usageRights.to
-                $expire_date_value = get-date $date.date
-                $expire_date_display = Get-Date -Format "yyyy-MM-dd" $date.date
+                $expire_date_value = Get-Date -Date $date.date
+                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date $date.date
 
                 if ($time_now -gt $expire_date_value) {
                     # Expired
@@ -244,7 +244,7 @@ foreach ($category in $categories){
                             'Date' = $expire_date_display
                             'Episode' = ''
                         }
-                        $excel_values += New-Object -TypeName PSObject -Property $hash
+                        $excel_values += New-Object -TypeName "PSObject" -Property $hash
                     }
                 }
             }
@@ -275,7 +275,7 @@ if ($CalendarReport) {
                 'Name' = $row.Name
                 'Date' = $expire_date
             }
-            $calendar_values += New-Object -TypeName PSObject -Property $hash
+            $calendar_values += New-Object -TypeName "PSObject" -Property $hash
         }
         else {
             $excel_values_dropped += 1

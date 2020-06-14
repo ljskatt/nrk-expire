@@ -18,6 +18,7 @@ Den lager rapporter utifra programmer/serier som:
 Ja, det har vi:
 
 - [Kalender rapport](https://ljskatt.no/nrk-expire.ics)<br>Kan linkes til kalender ved å legge til URL basert kalender: `https://ljskatt.no/nrk-expire.ics`
+- [Excel rapport](https://ljskatt.no/nrk-expire.xlxs)
 
 ## Excel
 Excel-scriptet henter ut informasjon fra NRK sitt API og legger det i en `.xlsx` (Excel) fil
