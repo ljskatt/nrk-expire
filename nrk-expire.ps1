@@ -26,7 +26,7 @@ if ((!($CalendarReport)) -and (!($ExcelReport))) {
 }
 
 if ($ExcelReport) {
-    if (!(Get-Module -Name ImportExcel)) {
+    if (!(Get-Module -Name "ImportExcel")) {
         Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
         exit
     }
@@ -81,7 +81,7 @@ function Format-Name {
     return $output
 }
 
-$categories = ((invoke-webrequest "https://psapi.nrk.no/tv/pages").Content | ConvertFrom-Json).pageListItems._links.self.href
+$categories = ((Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/pages").Content | ConvertFrom-Json).pageListItems._links.self.href
 $requests_uncached += 1
 $ProgressPreference = 'Continue'
 Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
@@ -137,7 +137,7 @@ foreach ($category in $categories){
                 $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
                 foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
                     if ($episode.usageRights.to.date){
-                        $expire_date_value = Get-Date -Date $episode.usageRights.to.date
+                        $expire_date_value = Get-Date -Date ($episode.usageRights.to.date)
                         $episode_id = $episode.prfId
                         if ($time_now -gt $expire_date_value) {
                             # Expired
@@ -182,8 +182,8 @@ foreach ($category in $categories){
                 }
 
                 $date = $episodes_raw.moreInformation.usageRights.to
-                $expire_date_value = Get-Date -Date $date.date
-                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date $date.date
+                $expire_date_value = Get-Date -Date ($date.date)
+                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date ($date.date)
 
                 if ($time_now -gt $expire_date_value) {
                     # Expired
@@ -226,8 +226,8 @@ foreach ($category in $categories){
                 }
 
                 $date = $episodes_raw.moreInformation.usageRights.to
-                $expire_date_value = Get-Date -Date $date.date
-                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date $date.date
+                $expire_date_value = Get-Date -Date ($date.date)
+                $expire_date_display = Get-Date -Format "yyyy-MM-dd" -Date ($date.date)
 
                 if ($time_now -gt $expire_date_value) {
                     # Expired
@@ -270,15 +270,15 @@ if ($CalendarReport) {
         $expire_date = $row.Date -replace "-" 
         $check_calendar = $null
         $check_calendar = $calendar_values | Where-Object {($_.Name -eq $row.Name) -and ($_.Date -eq "$expire_date")}
-        if (!($check_calendar.Name)){
+        if ($check_calendar.Name) {
+            $excel_values_dropped += 1
+        }
+        else {
             $hash = [ordered]@{
                 'Name' = $row.Name
                 'Date' = $expire_date
             }
             $calendar_values += New-Object -TypeName "PSObject" -Property $hash
-        }
-        else {
-            $excel_values_dropped += 1
         }
         Write-Progress -Id 4 -Activity "Converting to Calendar format" -Status "Processed: $excel_values_current/$excel_values_total, Dropped: $excel_values_dropped" -PercentComplete (100 / $excel_values_total * $excel_values_current)
     }
