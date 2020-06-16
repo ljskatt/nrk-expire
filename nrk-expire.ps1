@@ -15,6 +15,7 @@ $cache_dir = "$root_location\cache-nrk"
 $excel_file = "$root_location\near-expire-nrk.xlsx"
 $calendar_file = "$root_location\near-expire-nrk.ics"
 $excel_values = @()
+$processed_series = @()
 $ProgressPreference = 'SilentlyContinue'
 $requests_cached = 0
 $requests_uncached = 0
@@ -116,45 +117,55 @@ foreach ($category in $categories){
             $ProgressPreference = 'SilentlyContinue'
             if ($series.targetType -eq "series") {
                 $series_name = $series.displayContractContent.contentTitle
-                $series_name_filtered = Format-Name -Name "$series_name"
-                $series_url = $series.series._links.self.href
 
-                if (Test-Path -PathType "Leaf" -Path "$cache_dir/series/$series_name_filtered.json"){
-                    $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
-                    $requests_cached += 1
+                $check_series = $null
+                $check_series = $processed_series | Where-Object {$_.Name -eq $series_name}
+                if ($check_series) {
+                    $processed_items += 1
                 }
                 else {
-                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
-                    $requests_uncached += 1
-                    if (Test-Path -Type "Leaf" -Path "$cache_dir/series/$series_name_filtered.json") {
+                    $processed_series += New-Object -TypeName "PSObject" -Property @{'Name' = $series_name}
+
+                    $series_name_filtered = Format-Name -Name "$series_name"
+                    $series_url = $series.series._links.self.href
+
+                    if (Test-Path -PathType "Leaf" -Path "$cache_dir/series/$series_name_filtered.json"){
                         $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
+                        $requests_cached += 1
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
-                    }
-                }
-
-                $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
-                foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
-                    if ($episode.usageRights.to.date){
-                        $expire_date_value = Get-Date -Date ($episode.usageRights.to.date)
-                        $episode_id = $episode.prfId
-                        if ($time_now -gt $expire_date_value) {
-                            # Expired
+                        Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
+                        $requests_uncached += 1
+                        if (Test-Path -Type "Leaf" -Path "$cache_dir/series/$series_name_filtered.json") {
+                            $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
                         }
-                        elseif ($warn_expire -gt $expire_date_value) {
-                            # Available less than a year
-                            $check_excel = $null
-                            $check_excel = $excel_values | Where-Object {($_.Name -eq $series_name) -and ($_.Episode -eq $episode_id)}
-                            if (!($check_excel.Name)) {
-                                $hash = [ordered]@{
-                                    'Name' = $series_name
-                                    'URL' = "https://tv.nrk.no/episode$episode_id"
-                                    'Type' = $series.targetType
-                                    'Date' = (Get-Date -Format "yyyy-MM-dd" -Date $episode.usageRights.to.date)
-                                    'Episode' = $episode_id
+                        else {
+                            Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+                        }
+                    }
+
+                    $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
+                    foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
+                        if ($episode.usageRights.to.date){
+                            $expire_date_value = Get-Date -Date ($episode.usageRights.to.date)
+                            $episode_id = $episode.prfId
+                            if ($time_now -gt $expire_date_value) {
+                                # Expired
+                            }
+                            elseif ($warn_expire -gt $expire_date_value) {
+                                # Available less than a year
+                                $check_excel = $null
+                                $check_excel = $excel_values | Where-Object {($_.Name -eq $series_name) -and ($_.Episode -eq $episode_id)}
+                                if (!($check_excel.Name)) {
+                                    $hash = [ordered]@{
+                                        'Name' = $series_name
+                                        'URL' = "https://tv.nrk.no/episode$episode_id"
+                                        'Type' = $series.targetType
+                                        'Date' = (Get-Date -Format "yyyy-MM-dd" -Date $episode.usageRights.to.date)
+                                        'Episode' = $episode_id
+                                    }
+                                    $excel_values += New-Object -TypeName "PSObject" -Property $hash
                                 }
-                                $excel_values += New-Object -TypeName "PSObject" -Property $hash
                             }
                         }
                     }
@@ -311,9 +322,11 @@ if ($CalendarReport) {
 
     [void]$sb.AppendLine("END:VCALENDAR")
 
-    $sb.ToString() | Out-File -Encoding "UTF8" -FilePath "$calendar_file"
+    [System.IO.File]::WriteAllLines($calendar_file, $sb.ToString(), (New-Object System.Text.UTF8Encoding $False))
 }
 
 if ($ExcelReport) {
     $excel_values | Export-Excel -Path "$excel_file" -WorksheetName "Near Expiry"
 }
+
+Write-Output "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
