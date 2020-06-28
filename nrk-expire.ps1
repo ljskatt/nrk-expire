@@ -27,7 +27,7 @@ if ((!($CalendarReport)) -and (!($ExcelReport))) {
 }
 
 if ($ExcelReport) {
-    if (!(Get-Module -Name "ImportExcel")) {
+    if (!(Get-Command -Module "ImportExcel")) {
         Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
         exit
     }
@@ -82,7 +82,7 @@ function Format-Name {
     return $output
 }
 
-$categories = ((Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/pages").Content | ConvertFrom-Json).pageListItems._links.self.href
+$categories = (Invoke-RestMethod -Uri "https://psapi.nrk.no/tv/pages").pageListItems._links.self.href
 $requests_uncached += 1
 $ProgressPreference = 'Continue'
 Write-Progress -Id 0 -Activity "Requests" -Status "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
@@ -96,7 +96,7 @@ foreach ($category in $categories){
     $ProgressPreference = 'Continue'
     Write-Progress -Id 1 -Activity "Category" -Status "$category_current/$category_total" -PercentComplete (100 / $category_total * $category_current)
     $ProgressPreference = 'SilentlyContinue'
-    $req = (Invoke-WebRequest -Uri "https://psapi.nrk.no$category").Content | ConvertFrom-Json
+    $req = Invoke-RestMethod -Uri "https://psapi.nrk.no$category"
     $requests_uncached += 1
 
     $subcat_total = $req.sections.included.Count
