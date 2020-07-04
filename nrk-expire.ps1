@@ -33,34 +33,34 @@ if ($ExcelReport) {
     }
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir")) {
     New-Item -ItemType "Directory" -Path "$cache_dir" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/series")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/series" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/series")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/series")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create series cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/episode" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/standaloneprogram" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")){
+if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create standaloneprogram cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
@@ -91,7 +91,7 @@ $ProgressPreference = 'SilentlyContinue'
 $category_total = $categories.Count
 $category_current = 0
 
-foreach ($category in $categories){
+foreach ($category in $categories) {
     $category_current += 1
     $ProgressPreference = 'Continue'
     Write-Progress -Id 1 -Activity "Category" -Status "$category_current/$category_total" -PercentComplete (100 / $category_total * $category_current)
@@ -129,7 +129,7 @@ foreach ($category in $categories){
                     $series_name_filtered = Format-Name -Name "$series_name"
                     $series_url = $series.series._links.self.href
 
-                    if (Test-Path -PathType "Leaf" -Path "$cache_dir/series/$series_name_filtered.json"){
+                    if (Test-Path -PathType "Leaf" -Path "$cache_dir/series/$series_name_filtered.json") {
                         $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
                         $requests_cached += 1
                     }
@@ -146,7 +146,7 @@ foreach ($category in $categories){
 
                     $processed_items += $episodes_raw._embedded.seasons._embedded.episodes.Count
                     foreach ($episode in $episodes_raw._embedded.seasons._embedded.episodes) {
-                        if ($episode.usageRights.to.date){
+                        if ($episode.usageRights.to.date) {
                             $expire_date_value = Get-Date -Date ($episode.usageRights.to.date)
                             $episode_id = $episode.prfId
                             if ($time_now -gt $expire_date_value) {
@@ -177,7 +177,7 @@ foreach ($category in $categories){
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.episode._links.self.href
 
-                if (Test-Path -PathType "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json"){
+                if (Test-Path -PathType "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json") {
                     $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
                     $requests_cached += 1
                 }
@@ -221,7 +221,7 @@ foreach ($category in $categories){
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.standaloneProgram._links.self.href
 
-                if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json"){
+                if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json") {
                     $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
                     $requests_cached += 1
                 }
@@ -297,7 +297,7 @@ if ($CalendarReport) {
     foreach ($row in $calendar_values.GetEnumerator()) {
         $eventSubject = $row.Name
 
-        if ($row.Episode){
+        if ($row.Episode) {
             $row_episode = $row.Episode
             $row_name = $row.Name
             $eventDesc = "$row_name $row_episode"
