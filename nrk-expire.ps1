@@ -21,46 +21,46 @@ $requests_cached = 0
 $requests_uncached = 0
 $processed_items = 0
 
-if ((!($CalendarReport)) -and (!($ExcelReport))) {
+if ((-not ($CalendarReport)) -and (-not ($ExcelReport))) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " -CalendarReport and/or -ExcelReport is not specified " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
 if ($ExcelReport) {
-    if (!(Get-Command -Module "ImportExcel")) {
+    if (-not (Get-Command -Module "ImportExcel")) {
         Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
         exit
     }
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir")) {
     New-Item -ItemType "Directory" -Path "$cache_dir" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/series")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/series")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/series" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/series")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/series")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create series cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/episode")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/episode" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/episode")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/episode")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
-if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/standaloneprogram" | Out-Null
 }
-if (!(Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
+if (-not (Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
     Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create standaloneprogram cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
@@ -156,7 +156,7 @@ foreach ($category in $categories) {
                                 # Available less than a year
                                 $check_excel = $null
                                 $check_excel = $excel_values | Where-Object {($_.Name -eq $series_name) -and ($_.Episode -eq $episode_id)}
-                                if (!($check_excel.Name)) {
+                                if (-not ($check_excel.Name)) {
                                     $hash = [ordered]@{
                                         'Name' = $series_name
                                         'URL' = "https://tv.nrk.no/episode$episode_id"
@@ -203,7 +203,7 @@ foreach ($category in $categories) {
                     # Available less than a year
                     $check_excel = $null
                     $check_excel = $excel_values | Where-Object {($_.Name -eq "$series_name") -and ($_.Date -eq "$expire_date_display")}
-                    if (!($check_excel.Name)) {
+                    if (-not ($check_excel.Name)) {
                         $hash = [ordered]@{
                             'Name' = $series_name
                             'URL' = "https://tv.nrk.no$series_url"
@@ -247,7 +247,7 @@ foreach ($category in $categories) {
                     # Available less than a year
                     $check_excel = $null
                     $check_excel = $excel_values | Where-Object {($_.Name -eq "$series_name") -and ($_.Date -eq "$expire_date_display")}
-                    if (!($check_excel.Name)) {
+                    if (-not ($check_excel.Name)) {
                         $hash = [ordered]@{
                             'Name' = $series_name
                             'URL' = "https://tv.nrk.no$series_url"
