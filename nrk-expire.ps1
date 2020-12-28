@@ -22,13 +22,13 @@ $requests_uncached = 0
 $processed_items = 0
 
 if ((-not ($CalendarReport)) -and (-not ($ExcelReport))) {
-    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " -CalendarReport and/or -ExcelReport is not specified " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " -CalendarReport and/or -ExcelReport is not specified " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
 if ($ExcelReport) {
     if (-not (Get-Command -Module "ImportExcel")) {
-        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+        Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
         exit
     }
 }
@@ -37,7 +37,7 @@ if (-not (Test-Path -Type "Container" -Path "$cache_dir")) {
     New-Item -ItemType "Directory" -Path "$cache_dir" | Out-Null
 }
 if (-not (Test-Path -Type "Container" -Path "$cache_dir")) {
-    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Could not create cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
@@ -45,7 +45,7 @@ if (-not (Test-Path -Type "Container" -Path "$cache_dir/series")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/series" | Out-Null
 }
 if (-not (Test-Path -Type "Container" -Path "$cache_dir/series")) {
-    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create series cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Could not create series cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
@@ -53,7 +53,7 @@ if (-not (Test-Path -Type "Container" -Path "$cache_dir/episode")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/episode" | Out-Null
 }
 if (-not (Test-Path -Type "Container" -Path "$cache_dir/episode")) {
-    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Could not create episode cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
@@ -61,7 +61,7 @@ if (-not (Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
     New-Item -ItemType "Directory" -Path "$cache_dir/standaloneprogram" | Out-Null
 }
 if (-not (Test-Path -Type "Container" -Path "$cache_dir/standaloneprogram")) {
-    Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Could not create standaloneprogram cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+    Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Could not create standaloneprogram cache directory, exiting " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
     exit
 }
 
@@ -71,14 +71,7 @@ function Format-Name {
         [string]
         $Name
     )
-    $output = $Name
-    $output = $output -replace "\?"
-    $output = $output -replace ":"
-    $output = $output -replace [char]0x0021 # !
-    $output = $output -replace [char]0x0022 # "
-    $output = $output -replace "\*"
-    $output = $output -replace "/"
-    $output = $output -replace '\\'
+    $output = $name -replace "[^a-zA-Z0-9 .-]"
     return $output
 }
 
@@ -140,7 +133,7 @@ foreach ($category in $categories) {
                             $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
                         }
                         else {
-                            Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+                            Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                         }
                     }
 
@@ -188,7 +181,7 @@ foreach ($category in $categories) {
                         $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+                        Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                     }
                 }
 
@@ -232,7 +225,7 @@ foreach ($category in $categories) {
                         $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
                     }
                     else {
-                        Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+                        Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Error downloading $series_name_filtered " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
                     }
                 }
 
@@ -326,7 +319,7 @@ if ($CalendarReport) {
 }
 
 if ($ExcelReport) {
-    $excel_values | Export-Excel -Path "$excel_file" -WorksheetName "Near Expiry"
+    $excel_values | Export-Excel -Path "$excel_file" -WorksheetName "Near Expiry" -TableName "Table1" -TableStyle "Medium2"
 }
 
 Write-Output "Uncached: $requests_uncached, Cached: $requests_cached, Processed items: $processed_items"
