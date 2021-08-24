@@ -127,7 +127,7 @@ foreach ($category in $categories) {
                         $requests_cached += 1
                     }
                     else {
-                        Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
+                        Invoke-RestMethod -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/series/$series_name_filtered.json"
                         $requests_uncached += 1
                         if (Test-Path -Type "Leaf" -Path "$cache_dir/series/$series_name_filtered.json") {
                             $episodes_raw = Get-Content -Path "$cache_dir/series/$series_name_filtered.json" | ConvertFrom-Json
@@ -175,7 +175,7 @@ foreach ($category in $categories) {
                     $requests_cached += 1
                 }
                 else {
-                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/episode/$series_name_filtered.json"
+                    Invoke-RestMethod -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/episode/$series_name_filtered.json"
                     $requests_uncached += 1
                     if (Test-Path -Type "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json") {
                         $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
@@ -219,7 +219,7 @@ foreach ($category in $categories) {
                     $requests_cached += 1
                 }
                 else {
-                    Invoke-WebRequest -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/standaloneprogram/$series_name_filtered.json"
+                    Invoke-RestMethod -Uri "https://psapi.nrk.no/tv/catalog$series_url" -OutFile "$cache_dir/standaloneprogram/$series_name_filtered.json"
                     $requests_uncached += 1
                     if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json") {
                         $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
