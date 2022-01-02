@@ -75,6 +75,17 @@ function Format-Name {
     return $output
 }
 
+function Get-Id-From-Url ($series_url){ # Extracts the program/series id from the $series_url
+    $url_parts = $series_url.Split('/')
+    if ($url_parts.Length -eq 3) {
+        return $url_parts[-1]
+    }
+    else {
+        Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " Error getting id from url $series_url " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
+        return "Error getting url"
+    }
+}
+
 $categories = (Invoke-RestMethod -Uri "https://psapi.nrk.no/tv/pages").pageListItems._links.self.href
 $requests_uncached += 1
 $ProgressPreference = 'Continue'
@@ -152,7 +163,7 @@ foreach ($category in $categories) {
                                 if (-not ($check_excel.Name)) {
                                     $hash = [ordered]@{
                                         'Name' = $series_name
-                                        'URL' = "https://tv.nrk.no/episode$episode_id"
+                                        'URL' = "https://tv.nrk.no/se?v=$episode_id"
                                         'Type' = $series.targetType
                                         'Date' = (Get-Date -Format "yyyy-MM-dd" -Date $episode.usageRights.to.date)
                                         'Episode' = $episode_id
@@ -169,6 +180,7 @@ foreach ($category in $categories) {
                 $series_name = $series.displayContractContent.contentTitle
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.episode._links.self.href
+                $series_id = Get-Id-From-Url($series_url)
 
                 if (Test-Path -PathType "Leaf" -Path "$cache_dir/episode/$series_name_filtered.json") {
                     $episodes_raw = Get-Content -Path "$cache_dir/episode/$series_name_filtered.json" | ConvertFrom-Json
@@ -199,10 +211,10 @@ foreach ($category in $categories) {
                     if (-not ($check_excel.Name)) {
                         $hash = [ordered]@{
                             'Name' = $series_name
-                            'URL' = "https://tv.nrk.no$series_url"
+                            'URL' = "https://tv.nrk.no/se?v=$series_id"
                             'Type' = $series.targetType
                             'Date' = $expire_date_display
-                            'Episode' = ''
+                            'Episode' = $series_id
                         }
                         $excel_values += New-Object -TypeName "PSObject" -Property $hash
                     }
@@ -213,6 +225,7 @@ foreach ($category in $categories) {
                 $series_name = $series.displayContractContent.contentTitle
                 $series_name_filtered = Format-Name -Name "$series_name"
                 $series_url = $series.standaloneProgram._links.self.href
+                $series_id = Get-Id-From-Url($series_url)
 
                 if (Test-Path -Type "Leaf" -Path "$cache_dir/standaloneprogram/$series_name_filtered.json") {
                     $episodes_raw = Get-Content -Path "$cache_dir/standaloneprogram/$series_name_filtered.json" | ConvertFrom-Json
@@ -243,10 +256,10 @@ foreach ($category in $categories) {
                     if (-not ($check_excel.Name)) {
                         $hash = [ordered]@{
                             'Name' = $series_name
-                            'URL' = "https://tv.nrk.no$series_url"
+                            'URL' = "https://tv.nrk.no/se?v=$series_id"
                             'Type' = $series.targetType
                             'Date' = $expire_date_display
-                            'Episode' = ''
+                            'Episode' = $series_id
                         }
                         $excel_values += New-Object -TypeName "PSObject" -Property $hash
                     }
