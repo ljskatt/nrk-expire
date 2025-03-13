@@ -28,8 +28,22 @@ if ((-not ($CalendarReport)) -and (-not ($ExcelReport))) {
 
 if ($ExcelReport) {
     if (-not (Get-Command -Module "ImportExcel")) {
-        Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -ForegroundColor "DarkGray" -Object "|"
-        exit
+        $downloadaccept = Read-Host -Prompt "ImportExcel module (required-package) is not installed, do you want us to install it? Source: https://www.powershellgallery.com/packages/ImportExcel (Y/n)`n"
+        if ($downloadaccept -in '','y','yes') {
+            Write-Output "Installing ImportExcel module..."
+            Install-Module -Name ImportExcel -Scope CurrentUser -Force
+            if (Get-Command -Module "ImportExcel") {
+                Write-Host -Object "|" -NoNewline; Write-Host -BackgroundColor "Green" -ForegroundColor "Black" -Object " Success " -NoNewline; Write-Host -Object "|"; Write-Host ""
+            }
+            else {
+                Write-Host -Object "|" -NoNewline; Write-Host -BackgroundColor "Red" -ForegroundColor "Black" -Object " Failed " -NoNewline; Write-Host -Object "|"
+                exit
+            }
+        }
+        else {
+            Write-Host -BackgroundColor "Red" -ForegroundColor "White" -Object " ImportExcel is not installed, please install before running this script " -NoNewline; Write-Host -Object "|"
+            exit
+        }
     }
 }
 
